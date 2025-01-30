@@ -1,7 +1,19 @@
 import fs from "fs";
 import path from "path";
+import { Kafka } from "kafkajs";
 import { exec } from "child_process";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
+const kafka = new Kafka({
+    clientId: "build-queue",
+    brokers: ["localhost:9092"],
+    retry: {
+        initialRetryTime: 100,
+        maxRetryTime: 30000,
+        retries: 10,
+        factor: 0.2,
+    },
+});
 
 const s3Client = new S3Client({
     region: process.env.AWS_REGION,
@@ -10,6 +22,8 @@ const s3Client = new S3Client({
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     },
 });
+
+const producer = kafka.producer();
 
 const outDir = "/home/app/output";
 const projectName = process.env.PROJECT_NAME;
@@ -52,6 +66,28 @@ async function uploadToS3(files, distFolderPath, projectName) {
     }
 }
 
+let isProducerConnected = false;
+async function setupProducer() {
+    await producer.connect();
+    isProducerConnected = true;
+    console.log("🚀 Producer connected to Kafka.");
+}
+
+async function produceMessage(message) {
+    if (!isProducerConnected) {
+        await setupProducer();
+    }
+
+    try {
+        await producer.send({
+            topic: "build-queue",
+            messages: [{ value: message.toString() }],
+        });
+    } catch (err) {
+        console.error("❌ Kafka Producer Error:", err);
+    }
+}
+
 function init() {
     console.log("🚀 Build container service is running...");
 
@@ -64,11 +100,24 @@ function init() {
 
     const p = exec(`cd ${outDirPath} && pnpm install && pnpm run build`);
 
-    p.stdout.on("data", (data) => console.log(data));
-    p.stderr.on("error", (err) => console.error(err));
+    p.stdout.on("data", async (data) => {
+        console.log(data);
+        await produceMessage(data);
+    });
+
+    p.stderr.on("data", async (data) => {
+        console.error(data.toString());
+        await produceMessage(`[ERROR] ${data.toString()}`);
+    });
+
+    p.on("error", async (err) => {
+        console.error("❌ Build process error:", err.toString());
+        await produceMessage(`[ERROR] Build process error: ${err.toString()}`);
+    });
 
     p.on("exit", async (code) => {
         console.log(`✅ Build completed with exit code ${code}`);
+        await produceMessage(`[INFO] Build completed with exit code ${code}`);
 
         const distFolderPath = path.join(outDir, "dist");
         if (!fs.existsSync(distFolderPath)) {
@@ -82,7 +131,20 @@ function init() {
         await uploadToS3(files, distFolderPath, projectName);
 
         console.log("🚀 All files uploaded successfully!");
+        await produceMessage("Done");
     });
 }
 
 init();
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+    console.log("🛑 Shutting down...");
+    try {
+        await producer.disconnect();
+        console.log("✅ Kafka Producer disconnected.");
+    } catch (err) {
+        console.error("❌ Error disconnecting Kafka Producer:", err);
+    }
+    process.exit(0);
+});
