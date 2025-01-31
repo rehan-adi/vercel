@@ -1,17 +1,25 @@
 import fs from "fs";
 import path from "path";
-import { Kafka } from "kafkajs";
 import { exec } from "child_process";
+import { Kafka, Partitioners } from "kafkajs";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const kafka = new Kafka({
     clientId: "build-queue",
-    brokers: ["localhost:9092"],
+    brokers: ["kafka-786be73-rehan-adi.b.aivencloud.com:15796"],
+    sasl: {
+        mechanism: "plain",
+        username: process.env.KAFKA_USERNAME,
+        password: process.env.KAFKA_PASSWORD,
+    },
+    ssl: {
+        ca: fs.readFileSync("/home/app/ca.pem", "utf-8"),
+    },
     retry: {
         initialRetryTime: 100,
         maxRetryTime: 30000,
         retries: 10,
-        factor: 0.2,
+        factor: 0.5,
     },
 });
 
@@ -23,7 +31,9 @@ const s3Client = new S3Client({
     },
 });
 
-const producer = kafka.producer();
+const producer = kafka.producer({
+    createPartitioner: Partitioners.DefaultPartitioner
+});
 
 const outDir = "/home/app/output";
 const projectName = process.env.PROJECT_NAME;
@@ -76,11 +86,12 @@ async function setupProducer() {
 async function produceMessage(message) {
     if (!isProducerConnected) {
         await setupProducer();
+        isProducerConnected = true;
     }
 
     try {
         await producer.send({
-            topic: "build-queue",
+            topic: "build-logs",
             messages: [{ value: message.toString() }],
         });
     } catch (err) {
@@ -132,6 +143,7 @@ function init() {
 
         console.log("🚀 All files uploaded successfully!");
         await produceMessage("Done");
+        process.exit(0);
     });
 }
 

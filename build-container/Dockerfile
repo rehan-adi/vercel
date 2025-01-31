@@ -19,7 +19,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Copy remaining source files
-COPY main.sh index.js ./
+COPY main.sh index.js ca.pem ./
 
 # Set executable permissions
 RUN chmod +x main.sh index.js
