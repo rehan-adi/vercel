@@ -13,6 +13,7 @@ const kafka = new Kafka({
         password: process.env.KAFKA_PASSWORD,
     },
     ssl: {
+        rejectUnauthorized: false,
         ca: fs.readFileSync("/home/app/ca.pem", "utf-8"),
     },
     retry: {
