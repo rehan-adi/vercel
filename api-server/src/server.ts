@@ -3,6 +3,7 @@ import env from "dotenv";
 import morgan from "morgan";
 import helmet from "helmet";
 import express from "express";
+import { authRouter } from "./routes/auth";
 
 env.config();
 
@@ -13,6 +14,9 @@ server.use(express.json());
 server.use(cors());
 server.use(helmet());
 server.use(morgan("dev"));
+
+// Routes
+server.use("/api/v1/auth", authRouter);
 
 // health check endpoint
 server.get("/", (req, res) => {

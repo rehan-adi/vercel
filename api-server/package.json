@@ -4,24 +4,30 @@
   "main": "server.js",
   "scripts": {
     "start": "node dist/server.js",
-    "build": "esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --format=esm",
+    "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "author": "Rehan",
   "license": "MIT",
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.8",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.12.0",
     "esbuild": "^0.24.2",
+    "prisma": "^6.3.0",
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "@prisma/client": "6.3.0",
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0"
   }
 }
