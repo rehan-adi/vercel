@@ -1,0 +1,21 @@
+{
+  "name": "build-worker",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "author": "Rehan",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-ecs": "^3.738.0",
+    "bullmq": "^5.39.1",
+    "dotenv": "^16.4.7",
+    "ioredis": "^5.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0"
+  }
+}
