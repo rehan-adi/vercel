@@ -2,8 +2,12 @@ import fs from "fs";
 import path from "path";
 import env from "dotenv";
 import { Kafka } from "kafkajs";
+import { dbConnect } from "./db/connection";
+import { LogModel } from "./models/log.model";
 
 env.config();
+
+dbConnect();
 
 const kafka = new Kafka({
   clientId: "build-queue",
@@ -29,14 +33,43 @@ const consumer = kafka.consumer({
   groupId: "build-logs-consumer-group",
 });
 
+const logs: any[] = [];
+
+const BATCH_SIZE = 10;
+const BATCH_TIME_MS = 5000;
+
+async function flushLogs() {
+  if (logs.length > 0) {
+    try {
+      await LogModel.insertMany(logs);
+      logs.length = 0;
+    } catch (error) {
+      console.error("Error inserting logs:", error);
+    }
+  }
+}
+
+setInterval(flushLogs, BATCH_TIME_MS);
+
 async function start() {
   await consumer.connect();
   await consumer.subscribe({ topic: "build-logs", fromBeginning: true });
 
   consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
-      const logMessage = message.value?.toString();
-      console.log(logMessage);
+      const logData = JSON.parse(message.value?.toString() || "{}");
+
+      logs.push({
+        logs: logData.log,
+        projectName: logData.projectName || "unknown",
+        createdAt: new Date(),
+      });
+
+      if (logs.length >= BATCH_SIZE) {
+        await flushLogs();
+      }
+
+      console.log(logData.log);
     },
   });
 
