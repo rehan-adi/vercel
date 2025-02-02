@@ -93,7 +93,12 @@ async function produceMessage(message) {
     try {
         await producer.send({
             topic: "build-logs",
-            messages: [{ value: message.toString() }],
+            messages: [{
+                value: JSON.stringify({
+                    projectName: process.env.PROJECT_NAME,
+                    log: message.toString(),
+                }),
+            }],
         });
     } catch (err) {
         console.error("❌ Kafka Producer Error:", err);
