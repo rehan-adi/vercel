@@ -1,17 +1,12 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import prisma from "database";
+import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
+import { signupValidation, signinValidation } from "../validations/user";
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
-  const { email, password, name } = req.body;
-
-  if (!email || !password || !name) {
-    res
-      .status(400)
-      .json({ message: "Please provide email, password, and name." });
-    return;
-  }
+  const parsedData = signupValidation.parse(req.body);
+  const { email, password, name } = parsedData;
 
   try {
     const existingUser = await prisma.user.findUnique({
@@ -32,36 +27,24 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
-    const token = jwt.sign(
-      { userId: newUser.id },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "1h" }
-    );
-
     res.status(201).json({
-      message: "User created successfully!",
+      success: true,
       user: {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
       },
-      token,
+      message: "User created successfully!",
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
 export const signin = async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    res
-      .status(400)
-      .json({ message: "Please provide both email and password." });
-    return;
-  }
+  const parsedData = signinValidation.parse(req.body);
+  const { email, password } = parsedData;
 
   try {
     const user = await prisma.user.findUnique({
@@ -86,17 +69,20 @@ export const signin = async (req: Request, res: Response): Promise<void> => {
       { expiresIn: "1h" }
     );
 
+    res.cookie("token", token, {
+      maxAge: 72 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
     res.status(200).json({
-      message: "Signin successful!",
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
+      success: true,
       token,
+      message: "Signin successful!",
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
