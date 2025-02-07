@@ -1,0 +1,23 @@
+{
+  "name": "vercel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Implement vercel like system",
+  "scripts": {
+    "start": "pnpm -r run start",
+    "build": "pnpm -r run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "author": "Rehan",
+  "license": "MIT",
+  "packageManager": "pnpm@9.12.1",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "workspaces": [
+    "shared/*",
+    "services/*"
+  ]
+}

@@ -10,6 +10,7 @@
   "author": "Rehan",
   "license": "MIT",
   "dependencies": {
+    "database": "workspace:^1.0.0",
     "@aws-sdk/client-ecs": "^3.738.0",
     "bullmq": "^5.39.1",
     "dotenv": "^16.4.7",

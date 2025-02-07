@@ -1,13 +1,15 @@
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import prisma from "../utils/prisma";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import prisma from "database";
 import type { Request, Response } from "express";
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
   const { email, password, name } = req.body;
 
   if (!email || !password || !name) {
-    res.status(400).json({ message: 'Please provide email, password, and name.' });
+    res
+      .status(400)
+      .json({ message: "Please provide email, password, and name." });
     return;
   }
 
@@ -17,7 +19,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     });
 
     if (existingUser) {
-      res.status(400).json({ message: 'Email is already in use.' });
+      res.status(400).json({ message: "Email is already in use." });
       return;
     }
 
@@ -30,10 +32,14 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
-    const token = jwt.sign({ userId: newUser.id }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { userId: newUser.id },
+      process.env.JWT_SECRET as string,
+      { expiresIn: "1h" }
+    );
 
     res.status(201).json({
-      message: 'User created successfully!',
+      message: "User created successfully!",
       user: {
         id: newUser.id,
         email: newUser.email,
@@ -43,7 +49,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -51,7 +57,9 @@ export const signin = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    res.status(400).json({ message: 'Please provide both email and password.' });
+    res
+      .status(400)
+      .json({ message: "Please provide both email and password." });
     return;
   }
 
@@ -61,21 +69,25 @@ export const signin = async (req: Request, res: Response): Promise<void> => {
     });
 
     if (!user) {
-      res.status(404).json({ message: 'User not found.' });
+      res.status(404).json({ message: "User not found." });
       return;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      res.status(400).json({ message: 'Invalid password.' });
+      res.status(400).json({ message: "Invalid password." });
       return;
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET as string,
+      { expiresIn: "1h" }
+    );
 
     res.status(200).json({
-      message: 'Signin successful!',
+      message: "Signin successful!",
       user: {
         id: user.id,
         email: user.email,
@@ -85,6 +97,6 @@ export const signin = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };

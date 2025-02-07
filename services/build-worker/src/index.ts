@@ -1,5 +1,6 @@
 import env from "dotenv";
 import Redis from "ioredis";
+import prisma from "database";
 import { Queue, Worker, Job } from "bullmq";
 import { RunTaskCommand, ECSClient } from "@aws-sdk/client-ecs";
 
@@ -29,7 +30,6 @@ const worker = new Worker(
   "build-queue",
   async (job: Job) => {
     console.log(`Processing job ${job.id} with data:`, job.data);
-
     const command = new RunTaskCommand({
       cluster: process.env.AWS_ECS_CLUSTER,
       taskDefinition: process.env.AWS_ECS_TASKDEFINITION,
