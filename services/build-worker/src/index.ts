@@ -11,6 +11,14 @@ const connection = new Redis({
   port: 6379,
 });
 
+connection.on("connect", () => {
+  console.log("Connected to Redis");
+});
+
+connection.on("error", (error) => {
+  console.error("Redis connection error:", error);
+});
+
 const queue = new Queue("build-queue", {
   connection,
 });
