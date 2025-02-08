@@ -82,3 +82,58 @@ export const getProjects = async (
     return;
   }
 };
+
+export const deleteProject = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "You are not authenticated. Please Signin",
+      });
+      return;
+    }
+
+    const projectId = req.params.projectId;
+
+    if (!projectId) {
+      res
+        .status(400)
+        .json({ success: false, message: "Project Id is missing" });
+      return;
+    }
+
+    const project = await prisma.project.findFirst({
+      where: {
+        id: projectId,
+        userId,
+      },
+    });
+
+    if (!project) {
+      res.status(404).json({
+        success: false,
+        message: "Project not found or you do not have access to it",
+      });
+      return;
+    }
+
+    await prisma.project.delete({
+      where: {
+        id: projectId,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Project deleted successfully.",
+    });
+  } catch (error: unknown) {
+    console.error("Error while deleting project:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
