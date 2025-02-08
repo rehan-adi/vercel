@@ -7,6 +7,7 @@ import express from "express";
 import { WebSocketServer } from "ws";
 import { consumer } from "./utils/kafka";
 import { authRouter } from "./routes/auth";
+import { projectRouter } from "./routes/project";
 
 env.config();
 
@@ -21,6 +22,7 @@ server.use(morgan("dev"));
 
 // Routes
 server.use("/api/v1/auth", authRouter);
+server.use("/api/v1/project", projectRouter);
 
 // health check endpoint
 server.get("/", (req, res) => {
