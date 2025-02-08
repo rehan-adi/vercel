@@ -30,19 +30,37 @@ const worker = new Worker(
 
     let buildId: string;
     try {
-      const build = await prisma.build.create({
-        data: {
+      const build = await prisma.build.findFirst({
+        where: {
           projectId: job.data.projectId,
-          status: "BUILDING",
-          startedAt: new Date(),
+          status: "QUEUED",
+        },
+        orderBy: {
+          createdAt: "desc",
         },
       });
+
+      if (!build) {
+        throw new Error(
+          `No QUEUED build found for project ${job.data.projectId}`
+        );
+      }
+
       buildId = build.id;
+
+      await prisma.build.update({
+        where: { id: buildId },
+        data: {
+          status: "BUILDING",
+          updatedAt: new Date(),
+        },
+      });
+
       console.log(
-        `Build ${buildId} created for project ${job.data.projectName}`
+        `Build ${buildId} updated to BUILDING for project ${job.data.projectName}`
       );
     } catch (error) {
-      console.error("Failed to create build record:", error);
+      console.error("Failed to update build record to BUILDING:", error);
       throw error;
     }
 
