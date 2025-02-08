@@ -11,6 +11,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.8",
@@ -23,6 +24,7 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "bullmq": "^5.39.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "database": "workspace:^1.0.0",
     "dotenv": "^16.4.7",

@@ -5,6 +5,7 @@ import morgan from "morgan";
 import helmet from "helmet";
 import express from "express";
 import { WebSocketServer } from "ws";
+import cookieParser from "cookie-parser";
 import { consumer } from "./utils/kafka";
 import { authRouter } from "./routes/auth";
 import { projectRouter } from "./routes/project";
@@ -19,6 +20,7 @@ server.use(express.json());
 server.use(cors());
 server.use(helmet());
 server.use(morgan("dev"));
+server.use(cookieParser());
 
 // Routes
 server.use("/api/v1/auth", authRouter);
