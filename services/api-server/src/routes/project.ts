@@ -5,6 +5,7 @@ import {
   createProject,
   deleteProject,
   buildProject,
+  getProjectBuilds,
 } from "../controllers/project";
 
 export const projectRouter = express.Router();
@@ -15,3 +16,4 @@ projectRouter.delete("/:projectId", checkLogin, deleteProject);
 
 // build routes
 projectRouter.post("/:projectId/build", checkLogin, buildProject);
+projectRouter.get("/:projectId/builds", checkLogin, getProjectBuilds);
