@@ -6,6 +6,7 @@ import {
   deleteProject,
   buildProject,
   getProjectBuilds,
+  getBuildStatus,
 } from "../controllers/project";
 
 export const projectRouter = express.Router();
@@ -17,3 +18,8 @@ projectRouter.delete("/:projectId", checkLogin, deleteProject);
 // build routes
 projectRouter.post("/:projectId/build", checkLogin, buildProject);
 projectRouter.get("/:projectId/builds", checkLogin, getProjectBuilds);
+projectRouter.get(
+  "/:projectId/builds/:buildId/status",
+  checkLogin,
+  getBuildStatus
+);

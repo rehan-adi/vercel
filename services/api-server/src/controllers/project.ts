@@ -262,3 +262,46 @@ export const getProjectBuilds = async (
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+export const getBuildStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { projectId, buildId } = req.params;
+
+  if (!projectId || !buildId) {
+    res.status(400).json({
+      success: false,
+      message: "Both projectId and buildId are required.",
+    });
+    return;
+  }
+
+  try {
+    // Fetch build status from the database
+    const build = await prisma.build.findUnique({
+      where: {
+        id: buildId,
+      },
+    });
+
+    if (!build || build.projectId !== projectId) {
+      res.status(404).json({
+        message: "Build not found for the specified project.",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        status: build.status,
+        startedAt: build.startedAt,
+        completedAt: build.completedAt,
+      },
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching build status:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
