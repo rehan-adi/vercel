@@ -1,14 +1,17 @@
 import env from "dotenv";
 import Redis from "ioredis";
 import prisma from "database";
+import { config } from "./config/config";
 import { Queue, Worker, Job } from "bullmq";
-import { RunTaskCommand, ECSClient } from "@aws-sdk/client-ecs";
+import { RunTaskCommand } from "@aws-sdk/client-ecs";
+import { ecs, waitForTaskCompletion } from "./utils/ecs";
 
 env.config();
 
 const connection = new Redis({
   host: "localhost",
   port: 6379,
+  retryStrategy: (times) => Math.min(times * 50, 2000),
 });
 
 connection.on("connect", () => {
@@ -21,13 +24,9 @@ connection.on("error", (error) => {
 
 const queue = new Queue("build-queue", {
   connection,
-});
-
-const ecs = new ECSClient({
-  region: process.env.AWS_REGION!,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  defaultJobOptions: {
+    removeOnComplete: true,
+    removeOnFail: true,
   },
 });
 
@@ -73,8 +72,8 @@ const worker = new Worker(
     }
 
     const command = new RunTaskCommand({
-      cluster: process.env.AWS_ECS_CLUSTER,
-      taskDefinition: process.env.AWS_ECS_TASKDEFINITION,
+      cluster: config.AWS_ECS_CLUSTER,
+      taskDefinition: config.AWS_ECS_TASKDEFINITION,
       launchType: "FARGATE",
       count: 1,
       networkConfiguration: {
@@ -102,7 +101,14 @@ const worker = new Worker(
     });
 
     try {
-      await ecs.send(command);
+      const response = await ecs.send(command);
+      const taskArn = response.tasks?.[0]?.taskArn;
+
+      if (!taskArn) {
+        throw new Error("Failed to retrieve ECS Task ARN");
+      }
+
+      await waitForTaskCompletion(taskArn, buildId);
     } catch (error) {
       console.error(error);
 
@@ -123,63 +129,3 @@ const worker = new Worker(
     },
   }
 );
-
-worker.on("completed", async (job) => {
-  const { projectId } = job.data;
-
-  console.log(`Job completed for project: ${projectId}`);
-
-  const build = await prisma.build.findFirst({
-    where: {
-      projectId,
-      status: "BUILDING",
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  if (!build) {
-    console.error(`No building build found for project: ${projectId}`);
-    return;
-  }
-
-  await prisma.build.update({
-    where: { id: build.id },
-    data: {
-      status: "SUCCESS",
-      completedAt: new Date(),
-    },
-  });
-  console.log(`Build ${build.id} for project ${projectId} marked as SUCCESS.`);
-});
-
-worker.on("failed", async (job, error) => {
-  const { projectId } = job?.data;
-
-  console.error(`Job failed for project: ${projectId}`, error);
-
-  const build = await prisma.build.findFirst({
-    where: {
-      projectId,
-      status: "BUILDING",
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  if (!build) {
-    console.error(`No building build found for project: ${projectId}`);
-    return;
-  }
-
-  await prisma.build.update({
-    where: { id: build.id },
-    data: {
-      status: "FAILED",
-      completedAt: new Date(),
-    },
-  });
-  console.log(`Build ${build.id} for project ${projectId} marked as FAILED.`);
-});
