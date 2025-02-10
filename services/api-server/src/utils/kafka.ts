@@ -26,5 +26,5 @@ const kafka = new Kafka({
 });
 
 export const consumer = kafka.consumer({
-  groupId: "build-logs-consumer-group",
+  groupId: "build-logs-consumer-group-1",
 });
