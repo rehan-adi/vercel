@@ -30,7 +30,7 @@ const kafka = new Kafka({
 });
 
 const consumer = kafka.consumer({
-  groupId: "build-logs-consumer-group",
+  groupId: "build-logs-consumer-group-2",
 });
 
 const logs: any[] = [];
@@ -57,10 +57,17 @@ async function start() {
 
   consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
-      const logData = JSON.parse(message.value?.toString() || "{}");
+      let logData;
+
+      try {
+        logData = JSON.parse(message.value?.toString() || "{}");
+      } catch (error) {
+        console.error("Invalid JSON log:", message.value?.toString());
+        return;
+      }
 
       logs.push({
-        logs: logData.log,
+        logs: logData.log || logData,
         projectName: logData.projectName || "unknown",
         createdAt: new Date(),
       });
@@ -69,7 +76,7 @@ async function start() {
         await flushLogs();
       }
 
-      console.log(logData.log);
+      console.log(logData.log || logData);
     },
   });
 
