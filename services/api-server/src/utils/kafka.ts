@@ -1,17 +1,15 @@
 import fs from "fs";
 import path from "path";
-import env from "dotenv";
 import { Kafka } from "kafkajs";
-
-env.config();
+import { config } from "../config/config";
 
 const kafka = new Kafka({
   clientId: "build-queue",
-  brokers: [process.env.KAFKA_BROKER!],
+  brokers: [config.KAFKA_BROKER],
   sasl: {
     mechanism: "plain",
-    username: process.env.KAFKA_USERNAME!,
-    password: process.env.KAFKA_PASSWORD!,
+    username: config.KAFKA_USERNAME,
+    password: config.KAFKA_PASSWORD,
   },
   ssl: {
     rejectUnauthorized: false,

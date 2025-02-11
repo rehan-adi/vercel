@@ -1,3 +1,4 @@
+import { config } from "../config/config";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { NextFunction, Request, Response } from "express";
 
@@ -35,7 +36,7 @@ export const checkLogin = async (
     try {
       const decoded = jwt.verify(
         token.replace("Bearer ", ""),
-        process.env.JWT_SECRET!
+        config.JWT_SECRET
       ) as UserPayload;
       req.user = decoded;
       next();
